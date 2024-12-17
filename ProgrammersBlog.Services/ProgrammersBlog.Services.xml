@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ProgrammersBlog.Services</name>
+    </assembly>
+    <members>
+        <member name="M:ProgrammersBlog.Services.Abstract.ICategoryService.GetCategoryUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin CategoryUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="categoryId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Abstract.ICategoryService.AddAsync(ProgrammersBlog.Entities.Dtos.CategoryAddDto,System.String)">
+            <summary>
+            Verilen CategoryAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Category ekler.
+            </summary>
+            <param name="categoryAddDto">categoryAddDto tipinde eklenecek kategori bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Abstract.IDepartmanService.GetDepartmanUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin DepartmanUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="departmanId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Abstract.IDepartmanService.AddAsync(ProgrammersBlog.Entities.Dtos.DepartmanAddDto,System.String)">
+            <summary>
+            Verilen DepartmanAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Departmana ekler.
+            </summary>
+            <param name="departmanAddDto">departmanAddDto tipinde eklenecek kategori bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Abstract.IGorevlerService.GetGorevlerUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin GorevlerUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="gorevlerId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Abstract.IGorevlerService.AddAsync(ProgrammersBlog.Entities.Dtos.GorevlerAddDto,System.String)">
+            <summary>
+            Verilen GorevlerAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Gorevlere ekler.
+            </summary>
+            <param name="gorevlerAddDto">departmanAddDto tipinde eklenecek gorevler bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.CategoryManager.GetCategoryUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin CategoryUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="categoryId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.CategoryManager.AddAsync(ProgrammersBlog.Entities.Dtos.CategoryAddDto,System.String)">
+            <summary>
+            Verilen CategoryAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Category ekler.
+            </summary>
+            <param name="categoryAddDto">categoryAddDto tipinde eklenecek kategori bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.DepartmanManager.GetDepartmanUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin CategoryUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="departmanId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.DepartmanManager.AddAsync(ProgrammersBlog.Entities.Dtos.DepartmanAddDto,System.String)">
+            <summary>
+            Verilen CategoryAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Category ekler.
+            </summary>
+            <param name="departmanAddDto">departmanAddDto tipinde eklenecek kategori bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.GorevlerManager.GetGorevlerUpdateDtoAsync(System.Int32)">
+            <summary>
+            Verilen ID parametresine ait kategorinin CategoryUpdateDto temsilini geriye döner.
+            </summary>
+            <param name="gorevlerId">0'dan büyük integer bir ID değeri</param>
+            <returns>Asenkron bir operasyon ile Task olarak işlem sonucu DataResult tipinde geriye döner.</returns>
+        </member>
+        <member name="M:ProgrammersBlog.Services.Concrete.GorevlerManager.AddAsync(ProgrammersBlog.Entities.Dtos.GorevlerAddDto,System.String)">
+            <summary>
+            Verilen CategoryAddDto ve CreatedByName parametrelerine ait bilgiler ile yeni bir Category ekler.
+            </summary>
+            <param name="gorevlerAddDto">departmanAddDto tipinde eklenecek kategori bilgileri</param>
+            <param name="createdByName">string tipinde kullanıcının kullanıcı adı</param>
+            <returns>Asenkron bir operasyon ile Task olarak bizlere ekleme işleminin sonucunu DataResult tipinde döner.</returns>
+        </member>
+    </members>
+</doc>

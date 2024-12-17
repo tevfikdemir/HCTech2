@@ -1,0 +1,155 @@
+﻿@using ProgrammersBlog.Shared.Utilities.Results.ComplexTypes
+@model ProgrammersBlog.Entities.Dtos.PersonWorkListDto
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Personel Sipariş ve Beden Bazında iş Listesi";
+}
+
+
+ 
+
+<div class="row">
+    <div class="col-6">
+        <div id="piechart_3d" ></div>
+
+    </div>
+   
+    <div class="col-6">
+        <div id="piechart_2d" ></div>
+
+    </div>
+
+
+
+</div>
+
+<div class="row">
+    <div class="col-12" hidden>
+        <div id="chart_div" style="width: 400px; height: 120px;"></div>
+
+    </div>
+</div>
+
+
+@section Styles{
+ 
+}
+@section Scripts
+        {
+ 
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', { packages: ['gauge', 'corechart'] });
+        google.charts.setOnLoadCallback(drawCharts);
+
+        function drawCharts() {
+            $.ajax({
+                type: "GET",
+                dataType: "json",
+                contentType: "application/json",
+                url: '/Admin/OrdPersSizeOpr/GetAllOrdPersSizeOpr',
+                success: function (result) {
+                    var jsonData = JSON.parse(result);
+                    console.log(jsonData);
+                    columnChart(jsonData);
+                    gostergeChart(jsonData);
+                    halhaChart(jsonData);
+
+                },
+                error: function (error) {
+                    console.error('AJAX Error:', error);
+                }
+            });
+        }
+
+        function columnChart(jsonData) {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'FirstName');
+            data.addColumn('number', 'Adet');
+            data.addColumn({ type: 'string', role: 'annotation' });
+
+            $.each(jsonData.$values, function (i, obj) {
+                data.addRow([obj.PersonelName, obj.TotalQuantity, obj.OperasyonName]);
+            });
+
+            var pieChartOptions = {
+                title: "Personel İşler Adet",
+                width: 600,
+                height: 400
+            };
+
+            var pieChart = new google.visualization.ColumnChart(document.getElementById('piechart_3d'));
+            pieChart.draw(data, pieChartOptions);
+        }
+        
+        function halhaChart(jsonData) {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'FirstName');
+            data.addColumn('number', 'Yüzde');
+
+            $.each(jsonData.$values, function (i, obj) {
+                data.addRow([obj.PersonelName, obj.TotalQuantity]);
+            });
+
+            var pieChartOptions = {
+                title: "Personel İşler %",
+                width: 600,
+                height: 500,
+                is3D: true,
+            };
+
+            var pieChart = new google.visualization.PieChart(document.getElementById('piechart_2d'));
+            pieChart.draw(data, pieChartOptions);
+        }
+        
+        function gostergeChart(jsonData) {
+            var dataArray = [['Label', 'Value']];
+            $.each(jsonData.$values, function (i, obj) {
+                dataArray.push([obj.PersonelName, obj.TotalQuantity]);
+            });
+
+            var data = google.visualization.arrayToDataTable(dataArray);
+
+            var options = { 
+                width: 800,
+                height: 100,
+                redFrom: 0,
+                redTo: 50,
+                yellowFrom: 50,
+                yellowTo: 75,
+                greenFrom: 75,
+                greenTo: 100,
+                minorTicks: 5
+            };
+
+            var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
+
+            chart.draw(data, options);
+
+            setInterval(function () {
+                $.ajax({
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json",
+                    url: '/Admin/OrdPersSizeOpr/GetAllOrdPersSizeOpr',
+                    success: function (newResult) {
+                        var jss2 = JSON.parse(newResult);
+                        var newDataArray = [['Label', 'Value']];
+
+                        $.each(jss2.$values, function (i, obj) {
+                            newDataArray.push([obj.PersonelName, obj.TotalQuantity]);
+                        });
+
+                        var newData = google.visualization.arrayToDataTable(newDataArray);
+                        chart.draw(newData, options);
+                    },
+                    error: function (error) {
+                        console.error('AJAX Error:', error);
+                    }
+                });
+            }, 13000);
+        }
+
+                </script>
+
+}

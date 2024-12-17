@@ -1,0 +1,957 @@
+#include <WiFi.h>
+#include <Preferences.h>
+#include <SPI.h>
+#include <MFRC522.h>
+#include <HTTPClient.h>
+#include <Arduino_JSON.h>
+#include <vector>
+#include <Arduino.h>
+//#include <WiFiClientSecure.h>
+// RFID okuyucu pin tanımlamaları
+#define SS_PIN 5 // SDA
+#define RST_PIN 22
+MFRC522 rfid(SS_PIN, RST_PIN);
+
+const int pedalPin = 33; // GPIO33 pinini kullanarak voltajı oku
+float thresholdVoltage = 0.6; // Voltaj eşiği (2.3V)
+// Zaman ölçümü için değişkenler
+unsigned long pressStartTime = 0;
+unsigned long lastPressTime = 0;
+unsigned long totalPressTime = 0;
+
+// Şartlar
+int operationCount = 2;  // Operasyon sayısı
+int maxTime = 12;        // İşin süresi (saniye)
+int minTime = 6;         // Hile süresi (saniye)
+
+// Sayaç ve operasyon adımları
+int counter = 0;
+int currentOperation = 0;
+
+String endChar = String(char(0xff)) + String(char(0xff)) + String(char(0xff));
+String dfd = "";
+unsigned long asyncDelay = 0;
+int delayLength = 10000;
+Preferences preferences;
+String SSIDname = "";
+String SSIDpassword = "";
+String serverIP = "192.168.1.6";
+int serverPort = 5000;  
+//String serverIP = "192.168.1.6";
+//int serverPort = 80;    
+
+bool sayacDevrede = false;
+bool Tamir = false;
+struct ModelInfo {
+  String modelName;
+  String orderId;
+  String operationQuantity;
+  String orderNumber;
+  String dayTarget;
+};
+
+struct OperationInfo {
+  String operationName;
+  String operationId;
+  String operationTarget;
+  
+};
+
+int PersonelId=0;
+String Personel="";
+int OperationId=0;
+int OperationTarget;
+String Operation="";
+int OperationQuantity=0;
+int OrderId=0;
+String ModelName="";
+String ModelNumber="";
+int dayTarget=0;
+
+void waitForWiFiConnection();
+void resetWiFiCredentials();
+void kartoku();
+void inputFunction();
+void delayFunction();
+void fetchPersonnelData(String CardNumber);
+void fetchModelData(std::vector<ModelInfo>& modelList);
+void fetchOperationData(int orderId, std::vector<OperationInfo>& operationList);
+
+String urlEncode(String str) {
+  String encodedString = "";
+  char c;
+  char code0;
+  char code1;
+  char code2;
+  for (int i = 0; i < str.length(); i++) {
+    c = str.charAt(i);
+    if (c == ' ') {
+      encodedString += '+';
+    } else if (isalnum(c)) {
+      encodedString += c;
+    } else {
+      code1 = (c & 0xf) + '0';
+      if ((c & 0xf) > 9) {
+        code1 = (c & 0xf) - 10 + 'A';
+      }
+      c = (c >> 4) & 0xf;
+      code0 = c + '0';
+      if (c > 9) {
+        code0 = c - 10 + 'A';
+      }
+      code2 = '\0';
+      encodedString += '%';
+      encodedString += code0;
+      encodedString += code1;
+    }
+    yield();
+  }
+  return encodedString;
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial2.begin(9600, SERIAL_8N1, 17, 16);
+  pinMode(pedalPin, INPUT);
+
+  preferences.begin("credentials", false);
+  SSIDname = preferences.getString("ssid", "");
+  SSIDpassword = preferences.getString("password", "");
+  Serial.println("Kaydedilmiş WiFi bilgileri:");
+  Serial.println("SSID: " + SSIDname);
+  Serial.println("Password: " + SSIDpassword);
+
+  if (SSIDname != "" && SSIDpassword != "") {
+    Serial.println("WiFi'ye bağlanılıyor...");
+    WiFi.begin(SSIDname.c_str(), SSIDpassword.c_str());
+    delay(500);
+    
+    
+  }
+  if (WiFi.status() != WL_CONNECTED){
+      waitForWiFiConnection();
+    }
+  // SPI ve RFID okuyucu başlatma
+  SPI.begin(18, 19, 23); // SCK, MISO, MOSI pinlerini tanımlayın
+  rfid.PCD_Init();
+  Serial.println("NFC okuyucu hazır.");
+}
+
+void waitForWiFiConnection() {
+  int retryCount = 0;
+  while (WiFi.status() != WL_CONNECTED && retryCount < 20) {
+      // Seri porttan veri oku
+    while (Serial2.available()) {
+      dfd += char(Serial2.read());
+    }
+
+      // Komutları kontrol et
+    if (dfd.length() > 3 && dfd.substring(0, 3) != "C:C") {
+      dfd = "";
+    } else if (dfd.length() > 3 && dfd.substring(dfd.length() - 1) == "?") {
+      String commands = dfd.substring(3, 6);
+      String value = dfd.substring(6, dfd.length() - 1);
+      Serial.println(commands + " : " + value); // Nextion ekranından gelen komut
+      Serial.println("Komut kontrolü yapılıyor");
+
+      if (commands == "GET") {
+        dfd = "";
+        resetWiFiCredentials();
+        Serial2.print("page wifiekr" + String(endChar));
+        //Serial.println("xstr 0,110,320,40,0,BLACK,0,1,1,3,\"SCANNING...\"" + String(endChar));
+        int n = WiFi.scanNetworks();
+        if (n <= 0) {
+          Serial2.print("cb0.txt=\"0 Networks\"" + String(endChar));
+          Serial2.print("cb0.path=\"No networks found\"" + String(endChar));
+        } else {
+          String SSIDs = "";
+          for (int i = 0; i < n; ++i) {
+            if (i > 0) SSIDs += "\r\n";
+            SSIDs += WiFi.SSID(i);
+            Serial.println(WiFi.SSID(i));
+          }
+          Serial2.print("cb0.txt=\"" + String(n) + " Networks\"" + String(endChar));
+          Serial2.print("cb0.path=\"" + SSIDs + "\"" + String(endChar));
+        }
+        //Serial.println("xstr 0,110,320,40,0,WHITE,0,1,1,3,\"SCANNING...\"" + String(endChar));
+        Serial.println("GET komutu kontrolü tamamlandı");
+        retryCount = 20;
+      }
+
+      if (commands == "CON") {
+        dfd = "";
+        int colonLoc = value.indexOf(":");
+        SSIDname = value.substring(0, colonLoc);
+        SSIDpassword = value.substring(colonLoc + 1);
+        WiFi.begin(SSIDname.c_str(), SSIDpassword.c_str());
+        delay(3000);
+        waitForWiFiConnection();
+        if (WiFi.status() == WL_CONNECTED) {
+          preferences.begin("credentials", false);
+          preferences.putString("ssid", SSIDname);
+          preferences.putString("password", SSIDpassword);
+          preferences.end();
+          Serial.println("Kullanıcı adı:");
+          Serial.println(SSIDname);
+          Serial.println("Şifre:");
+          Serial.println(SSIDpassword);
+          Serial.println("EEPROM'a kaydedildi..");
+          Serial2.print("page girisekr" + String(endChar));
+          delay(500);
+        }
+        Serial.println("CON komutu kontrolü tamamlandı");
+
+        retryCount = 20;
+      }
+
+      if (commands == "CIK") {
+        dfd = "";
+        Serial2.print("page girisekr" + String(endChar)); // Eğer page0'da değilsek geçiş yap
+        Serial.println("CIK komutu kontrolü tamamlandı");
+        //Operasyon Değerleri ESP ye iletiliyor
+
+        sayacDevrede=false;
+
+        retryCount = 20;
+      }
+    }
+
+    retryCount++;
+    delay(500); // Biraz bekleyelim
+            }
+          if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("WiFi bağlantısı başarılı!");
+            Serial.println(SSIDname + ":" + SSIDpassword);
+            Serial.println("Status : " + String(WiFi.status()));
+            Serial2.print("page girisekr" + String(endChar)); // Ekranı page0'a geçir
+            Serial2.print("wifi.pic=11" + String(endChar));
+          } else {
+            Serial.println("WiFi bağlantısı başarısız!");
+            Serial2.print("page wifisekr" + String(endChar)); // Ekranı page0'a geçir
+            Serial2.print("wifi.pic=10" + String(endChar));
+          }
+  
+}
+void ServerGonder() {
+  HTTPClient http;
+  http.begin("http://" + String(serverIP) + ":" + String(serverPort) + "/api/data"); // API endpoint
+  http.addHeader("Content-Type", "application/json");
+
+  int sizeId = 1;
+  int Quantity=1;
+  // JSON verisi
+  String jsonData = "{\"OrderId\":" + String(OrderId) + ",\"PersonId\":" + String(PersonelId) + ",\"SizeId\":" + String(sizeId) + ",\"OperationId\":" + String(OperationId) + ",\"Quantity\":" + String(Quantity) + "}";
+
+  int httpResponseCode = http.POST(jsonData);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println(httpResponseCode);
+    Serial.println(response);
+  } else {
+    Serial.print("Hata kodu: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
+void fetchPersonnelData(String CardNumber) {
+  Serial.println("Personel bilgi çekme işlemleri başlatıldı");
+
+  String encodedCardNumber = urlEncode(CardNumber);
+  String uri = "http://" + serverIP + ":" + serverPort + "/api/data/GetPerson?CardNumber=" + encodedCardNumber;
+  Serial.println("Request URI: " + uri);
+
+  HTTPClient http;
+  http.begin(uri);
+  int httpResponseCode = http.GET();
+
+  Serial.print("HTTP Response Code: ");
+  Serial.println(httpResponseCode);
+
+  if (httpResponseCode > 0) {
+    String payload = http.getString();
+    Serial.println("HTTP Response Payload: ");
+    Serial.println(payload);
+
+    if (payload.length() == 0) {
+      Serial.println("Boş yanıt alındı.");
+      return;
+    }
+    
+    // JSON verilerini ayrıştırma
+    JSONVar gpersonel = JSON.parse(payload);
+
+    if (JSON.typeof(gpersonel) == "undefined") {
+      Serial.println("Parsing input failed!");
+      return;
+    }
+
+    Serial.print("JSON object = ");
+    Serial.println(gpersonel);
+
+    JSONVar values = gpersonel["$values"];
+    if (JSON.typeof(values) == "undefined") {
+      Serial.println("Values parsing failed!");
+      return;
+    }
+
+    for (int i = 0; i < values.length(); i++) {
+      JSONVar personels = values[i];
+      Personel = String((const char*)personels["firstName"]);
+      Personel=replaceTurkishChars(Personel);
+      PersonelId = (int)personels["personId"];
+
+      Serial.println("First Name: " + Personel);
+      // İşlemleri depolamak için burada ek kodlar ekleyebilirsiniz
+    }
+  } else {
+    Serial.print("Error on HTTP request: ");
+    Serial.println(httpResponseCode);
+  }
+  http.end();
+}
+
+void fetchModelData(std::vector<ModelInfo>& modelList) {
+  Serial.println("Model bilgi çekme işlemleri başlatıldı");
+  String uri = "http://" + serverIP + ":" + serverPort + "/api/data/GetModel"; // HTTP isteği yapmak istediğiniz endpoint URI'sini buraya girin
+  HTTPClient http;
+  http.begin(uri);
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0) {
+    String payload = http.getString();
+    Serial.println(payload);
+    // JSON verilerini ayrıştırma
+    JSONVar models = JSON.parse(payload);
+    
+    if (JSON.typeof(models) == "undefined") {
+      Serial.println("Parsing input failed!");
+      return;
+    }
+    Serial.print("JSON object = ");
+    Serial.println(models);
+
+    // İşlemleri depolamak için bir liste oluştur
+    modelList.clear(); // Varolan listeyi temizle
+
+    JSONVar values = models["$values"];
+    String modelNames ="";
+    String orderIds = "";
+    String operationQuantitys ="";
+    String orderNumbers ="";
+    String dayTargets="";
+    for (int i = 0; i < values.length(); i++) {
+      JSONVar model = values[i];
+
+      modelNames = String((const char*)model["modelName"]);
+      orderIds = String((int)model["orderId"]);
+      operationQuantitys = String((int)model["operationQuantity"]);
+      orderNumbers = String((const char*)model["orderNumber"]);
+      dayTargets=String((int)model["dayTarget"]);
+
+      // Oluşturduğumuz bilgileri liste içine ekleyelim
+      ModelInfo info;
+      info.modelName = modelNames;
+      info.orderId = orderIds;
+      info.operationQuantity = operationQuantitys;
+      info.orderNumber = orderNumbers;
+      info.dayTarget=dayTargets;
+
+      modelList.push_back(info); // Listeye ekle
+    }
+
+    // Listeyi döndürmek için hazırız
+    //return modelList;
+
+  } else {
+    Serial.print("Error on HTTP request: ");
+    Serial.println(httpResponseCode);
+    return; // Hata durumunda boş liste döndür
+  }
+
+  http.end();
+}
+
+void fetchOperationData(int orderId, std::vector<OperationInfo>& operationList) {
+  Serial.println("Operasyon bilgi çekme işlemleri başlatıldı");
+  String uri = "http://" + serverIP + ":" + serverPort + "/api/data/GetOperation?orderId=" + String(orderId); // HTTP isteği yapmak istediğiniz endpoint URI'sini buraya girin
+  HTTPClient http;
+  http.begin(uri);
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0) {
+    String payload = http.getString();
+    Serial.println(payload);
+    
+    // JSON verilerini ayrıştırma
+    JSONVar operation = JSON.parse(payload);
+    
+    if (JSON.typeof(operation) == "undefined") {
+      Serial.println("Parsing input failed!");
+      return;
+    }
+
+    Serial.print("JSON object = ");
+    Serial.println(operation);
+
+    // İşlemleri depolamak için bir liste oluştur
+    operationList.clear(); // Varolan listeyi temizle
+
+    String operationIds="";
+    String operationNames="";
+    String operationTargets="";
+    JSONVar values = operation["$values"];
+    for (int i = 0; i < values.length(); i++) {
+      JSONVar operations = values[i];
+
+      operationNames = String((const char*)operations["operationName"]);
+      operationIds = String((int)operations["operationId"]);
+      operationTargets = String((int)operations["operationTarget"]);
+      // Oluşturduğumuz bilgileri liste içine ekleyelim
+      OperationInfo info;
+      info.operationName = operationNames;
+      info.operationId = operationIds;
+      info.operationTarget = operationTargets;
+
+      operationList.push_back(info); // Listeye ekle
+    }
+  } else {
+    Serial.print("Error on HTTP request: ");
+    Serial.println(httpResponseCode);
+  }
+  http.end();
+}
+
+void resetWiFiCredentials() {
+  preferences.clear();
+  preferences.end();
+  Serial.println("WiFi bilgileri sıfırlandı.");
+}
+
+void kartoku() {
+  String CardNumber = "";
+  bool cardRead = false; // Kartın okunduğunu belirlemek için flag
+  // Kart okutma işlemi
+  while (!cardRead) {
+    // Yeni bir kart algılandığında
+    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+      // Kartın UID'sini yazdırın ve kontrol edin
+      Serial.print("Kart UID: ");
+      String uidString = "";
+      for (byte i = 0; i < rfid.uid.size; i++) {
+        uidString += String(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+        uidString += String(rfid.uid.uidByte[i], HEX);
+      }
+      uidString.toUpperCase(); // UID'yi büyük harfe dönüştür
+      uidString.trim();
+      Serial.println(uidString);
+      CardNumber=uidString;
+      fetchPersonnelData(CardNumber);
+      if(PersonelId>0){
+         String mnames="";
+         String mnamesEn="";
+         String orders="";
+         String quantitys="";
+         std::vector<ModelInfo> modelList;
+        fetchModelData(modelList);
+        if(modelList.size()>0){
+         for (const auto& model : modelList) {
+          if (!mnames.isEmpty()) {
+                mnames += "\r\n"; // Her modelden önce yeni satır ekle
+                orders += "\r\n"; // Her order ID'den önce yeni satır ekle
+                quantitys += "\r\n"; // Her quantity'den önce yeni satır ekle
+              }
+              mnamesEn=model.modelName;
+              mnames += replaceTurkishChars(mnamesEn) ;
+              orders +=model.orderId ;
+              quantitys +=model.operationQuantity ;
+            }
+                        int kayitSayisi = modelList.size(); // Kayıt sayısını belirle
+                        const auto& model = modelList[0]; 
+                        mnamesEn=model.modelName;
+                        String firstmname =replaceTurkishChars(mnamesEn);
+                        String firstorder = model.orderId;
+                        String firstquantity = model.operationQuantity;
+
+          Serial.println("Eşleşen personel bulundu: " + Personel);
+          Serial.println(mnames);
+          // Kartı uyku moduna alın
+          rfid.PICC_HaltA();
+          rfid.PCD_StopCrypto1();
+          modelList.clear();
+          // Kart okuma işlemi tamamlandığında döngüden çık
+          cardRead = true;
+          Serial2.print("page modelekr" + endChar);
+          Serial2.print("va1.val=" + String(kayitSayisi) + endChar);
+          Serial2.print("t0.txt=\"" + Personel +"\"" + endChar);
+          Serial2.print("t1.txt=\"" + firstmname +"\"" + endChar);
+          Serial2.print("t2.txt=\"" + firstorder +"\"" + endChar);
+          Serial2.print("t3.txt=\"" + firstquantity +"\"" + endChar);
+          Serial2.print("select0.path=\"" + mnames + "\"" + endChar);
+          Serial2.print("select1.path=\"" + orders + "\"" + endChar);
+          Serial2.print("select2.path=\"" + quantitys + "\"" + endChar);
+}else{
+  Serial.println("Kayıtlı Model Yok");
+  Serial2.println("xstr 80,620,320,40,0,BLACK,0,1,1,3,\"KAYITLI MODEL YOK\"" + String(endChar));
+  delay(1500);
+  Serial2.print("page girisekr" + endChar);
+}
+}else{
+  Serial.println("Kayıtlı Personel Yok");
+  Serial2.println("xstr 80,620,320,40,0,RED,0,1,1,3,\"BILINMEYEN PERSONEL\"" + String(endChar));
+  Serial2.print("page girisekr" + endChar);
+}
+          Serial.println("Kart okuma işlemi tamamlandı, döngüden çıkılıyor.");
+          break;
+        
+    }
+  }
+}
+
+void SayacDevreyeAl(){
+  if(Serial2.available()){
+    inputFunction();
+  }
+  // Pedal voltajını oku
+    int sensorValue = analogRead(pedalPin);  // Analog voltajı oku
+    float voltage = (sensorValue / 4095.0) * 3.3;  // 12-bit ADC, 3.3V referans
+    unsigned long currentTime = millis();
+
+    if (voltage >= thresholdVoltage) { // Pedal basılı
+      if (pressStartTime == 0) { // İlk basış
+        pressStartTime = currentTime;
+        Serial.println("Pedal basılı...");
+      }
+      lastPressTime = currentTime;
+    } else if (pressStartTime != 0) { // Pedal bırakıldı
+      unsigned long pressDuration = (currentTime - pressStartTime); // Basılı kalma süresi (ms)
+      pressStartTime = 0; // Basış zamanını sıfırla
+      totalPressTime += pressDuration; // Toplam basılı kalma süresini artır
+
+      unsigned long totalPressTimeSeconds = totalPressTime / 1000; // Toplam süreyi saniye cinsine çevir
+
+      if (totalPressTimeSeconds >= minTime) {
+        currentOperation++;
+        totalPressTime = 0; // Toplam süreyi sıfırla
+        Serial.print("Pedal bırakıldı. Operasyon süresi: ");
+        Serial.print(pressDuration / 1000.0);
+        Serial.print(" saniye. Geçerli operasyon: ");
+        Serial.println(currentOperation);
+
+        if (currentOperation >= operationCount) {
+          counter++;
+          ServerGonder();
+          Serial.print("Sayaç güncellendi. Yeni değer: ");
+          Serial.println(counter);
+          currentOperation = 0;
+          Serial2.print("n4.val=" + String(counter) + endChar);
+        }
+      } else {
+        Serial.print("Hile süresi içinde pedal bırakıldı. Toplam süre: ");
+        Serial.println(totalPressTimeSeconds);
+      }
+    }
+
+    // İş süresi kontrolü, sadece pedala basılmışsa yapılır
+    if (pressStartTime == 0 && totalPressTime / 1000 >= maxTime) {
+      currentOperation++;
+      Serial.print("İş süresi aşıldı. Geçerli operasyon: ");
+      Serial.println(currentOperation);
+
+      if (currentOperation >= operationCount) {
+        counter++;
+        Serial.print("Sayaç güncellendi. Yeni değer: ");
+        Serial.println(counter);
+        ServerGonder();
+        currentOperation = 0;
+        Serial2.print("n4.val=" + String(counter) + endChar);
+      }
+      totalPressTime = 0; // Süre dolduğunda toplam süreyi sıfırla
+    }
+
+    delay(1); // Kodun sürekli çalışmasını önlemek için kısa bir bekleme
+}
+
+void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    waitForWiFiConnection();
+  } else {
+       if(sayacDevrede){
+        SayacDevreyeAl();
+       }else{
+        
+          if (Serial2.available()) {
+            inputFunction();
+          }
+          if (millis() > asyncDelay) {
+            asyncDelay += delayLength;
+            delayFunction();
+          }
+          if (dfd.endsWith(endChar)) {
+            Serial.println(dfd);
+            Serial.println("error");
+            dfd = "";
+          }
+        }
+  }// else sonu
+    
+}
+
+ 
+
+void inputFunction() {
+  while (Serial2.available()) {
+    char incomingChar = Serial2.read();
+    dfd += incomingChar;
+
+    // '?' karakterini gördüğümüzde komutun sonlandığını varsayıyoruz
+    if (dfd.endsWith("?")) {
+      Serial.println("Gelen Veri: " + dfd); // Debug için gelen veriyi yazdır
+      Serial.print("Hex Format: ");
+      
+      // Komutun geçerli olup olmadığını kontrol et
+      if (dfd.startsWith("C:C") && dfd.length() > 6) {
+        String command = dfd.substring(3, 6);
+        String value = dfd.substring(6, dfd.length() - 1); // '?' karakterini çıkardık
+        Serial.println(command + " : " + value); // Komut ve değeri yazdır
+
+        if (command == "GET") {
+          // GET komutunu işle
+          dfd = ""; 
+                resetWiFiCredentials();
+                Serial2.print("page girisekr" + endChar);
+                Serial.println("xstr 0,110,320,40,0,BLACK,0,1,1,3,\"SCANNING...\"" + endChar);
+                int n=0;
+                n = WiFi.scanNetworks();
+                if (n <= 0) {
+                  Serial2.print("cb0.txt=\"0 Networks\"" + endChar);
+                  Serial2.print("cb0.path=\"No networks found\"" + endChar);
+                } else {
+                  String SSIDs = "";
+                  for (int i = 0; i < n; ++i) {
+                    if (i > 0) SSIDs += "\r\n";
+                    SSIDs += WiFi.SSID(i);
+                    Serial.println(WiFi.SSID(i));
+                  }
+                  Serial2.print("cb0.txt=\"" + String(n) + " Networks\"" + endChar);
+                  Serial2.print("cb0.path=\"" + SSIDs + "\"" + endChar);
+                }
+                Serial.println("xstr 0,110,320,40,0,WHITE,0,1,1,3,\"SCANNING...\"" + endChar);
+                Serial.println("Get Kontrolü Tamamlandı");
+        } else if (command == "CON") {
+          // CON komutunu işle
+          dfd = ""; 
+            int colonLoc = value.indexOf(":");
+            SSIDname = value.substring(0, colonLoc);
+            SSIDpassword = value.substring(colonLoc + 1);
+            WiFi.begin(SSIDname.c_str(), SSIDpassword.c_str());
+            delay(3000);
+            waitForWiFiConnection();
+            if (WiFi.status() == WL_CONNECTED) {
+              preferences.begin("credentials", false);
+              preferences.putString("ssid", SSIDname);
+              preferences.putString("password", SSIDpassword);
+              preferences.end();
+              Serial.println("Kullanıcı adı:");
+              Serial.println(SSIDname);
+              Serial.println("Şifre:");
+              Serial.println(SSIDpassword);
+              Serial.println("EEPROM'a kaydedildi..");
+              Serial2.print("page girisekr" + String(endChar));
+              delay(500);
+            }
+            Serial.println("Con Kontrolü Tamamlandı");
+            } else if (command == "OKU") {
+              // OKU komutunu işle
+              dfd = ""; 
+            Serial2.print("page kartekr" + endChar);
+            kartoku();
+            Serial.println("Oku Kontrolü Tamamlandı");
+        } else if (command == "MEK") {
+          // MEK komutunu işle
+           String mnames ="";
+          String mnamesEn ="";
+          String orders ="";
+          String quantitys ="";
+          String modelNumbers ="";
+
+          std::vector<ModelInfo> modelList;
+          fetchModelData(modelList);
+          for (const auto& model : modelList) {
+            if (!mnames.isEmpty()) {
+                mnames += "\r\n"; // Her modelden önce yeni satır ekle
+                orders += "\r\n"; // Her order ID'den önce yeni satır ekle
+                quantitys += "\r\n"; // Her quantity'den önce yeni satır ekle
+              }
+               
+              mnamesEn= model.modelName;
+              mnames += replaceTurkishChars(mnamesEn);
+              orders +=model.orderId;
+              quantitys +=model.operationQuantity;
+            }
+          int kayitSayisi = modelList.size(); // Kayıt sayısını belirle
+                        const auto& model = modelList[0]; 
+                        mnamesEn= model.modelName;
+                        String firstmname = replaceTurkishChars(mnamesEn);
+                        String firstorder = model.orderId;
+                        String firstquantity = model.operationQuantity;
+
+          Serial2.print("page modelekr" + endChar);
+          Serial2.print("va1.val=" + String(kayitSayisi) + endChar);
+          Serial2.print("t0.txt=\"" + Personel +"\"" + endChar);
+          Serial2.print("t1.txt=\"" + firstmname +"\"" + endChar);
+          Serial2.print("t2.txt=\"" + firstorder +"\"" + endChar);
+          Serial2.print("t3.txt=\"" + firstquantity +"\"" + endChar);
+          Serial2.print("select0.path=\"" + mnames + "\"" + endChar);
+          Serial2.print("select1.path=\"" + orders + "\"" + endChar);
+          Serial2.print("select2.path=\"" + quantitys + "\"" + endChar);
+ 
+          Serial.println("Kart okuma işlemi tamamlandı, döngüden çıkılıyor.");
+        } else if (command == "MSC") {
+          // MSC komutunu işle
+          dfd = "";
+                  int colonMSC = value.indexOf(":");
+
+                  if (colonMSC != -1) {
+                    String orderIdStr = value.substring(0, colonMSC);
+
+                    if (orderIdStr.length() > 0) {
+                      OrderId = orderIdStr.toInt(); // String'i int'e dönüştür ve OrderId'ye ata
+                      std::vector<ModelInfo> modelList;
+                      fetchModelData(modelList);
+                      for (const auto& model : modelList) {
+
+                        if (OrderId == model.orderId.toInt()) {
+                          ModelName =replaceTurkishChars(model.modelName) ;
+                          ModelNumber = model.orderNumber;
+                          OperationQuantity=model.operationQuantity.toInt();
+                          dayTarget=model.dayTarget.toInt();
+                          break;
+                        }
+                      }
+                      int secondColon = value.indexOf(":", colonMSC + 1);
+                      if (secondColon != -1) {
+                        String quantityStr = value.substring(secondColon + 1);
+                        if (quantityStr.length() > 0) {
+                          int quantity = quantityStr.toInt(); // String'i int'e dönüştür
+                          OperationQuantity = quantity;
+
+                          std::vector<OperationInfo> operationList; // Yerel bir operationList oluşturun
+                          fetchOperationData(OrderId, operationList); // fetchOperationData fonksiyonunu çağırın ve yerel listeyi kullanın
+
+                          String Sopns = "";
+                          String operationTargets = "";
+                          String operationIds = "";
+                          String operationNameEn="";
+                          for (const auto& operations : operationList) {
+                            if (!Sopns.isEmpty()) {
+                              Sopns += "\r\n"; // Her modelden önce yeni satır ekle
+                              operationTargets += "\r\n"; // Her order ID'den önce yeni satır ekle
+                              operationIds += "\r\n"; // Her quantity'den önce yeni satır ekle
+                            }
+                            operationNameEn = operations.operationName;
+                            Sopns += replaceTurkishChars(operationNameEn); // Türkçe karakterleri değiştir
+                            // operationTarget ve operationId değerlerini al
+                            operationIds += operations.operationId;
+                            operationTargets += operations.operationTarget;
+                          }
+                            int kayitSayisi = operationList.size(); // Kayıt sayısını belirle
+                            
+                                      const auto& operation = operationList[0]; 
+                                      operationNameEn=operation.operationName;
+                                      String firstoperationId = operation.operationId;
+                                      String firstoperationTarget = operation.operationTarget;
+                                      String firstoperationname =replaceTurkishChars(operationNameEn);
+                          
+                          Serial2.print("page operasyonekr" + endChar);
+                          Serial2.print("opkayitsay.val=" + String(kayitSayisi) + endChar);
+                          Serial2.print("t0.txt=\"" + Personel + "\"" + endChar);
+                          Serial2.print("t1.txt=\"" + ModelNumber + "\"" + endChar);
+                          Serial2.print("t2.txt=\"" + ModelName + "\"" + endChar);
+                          Serial2.print("t3.txt=\"" + String(OperationQuantity) + "\"" + endChar);
+                          Serial2.print("t4.txt=\"" + firstoperationname + "\"" + endChar);
+                          Serial2.print("t5.txt=\"" + firstoperationId + "\"" + endChar);
+                          Serial2.print("t6.txt=\"" + String(firstoperationTarget) + "\"" + endChar);
+                          Serial2.print("select1.path=\"" + operationIds + "\"" + endChar);
+                          Serial2.print("select2.path=\"" + operationTargets + "\"" + endChar);
+                          Serial2.print("select0.path=\"" + Sopns + "\"" + endChar);
+                          
+                        } else {
+                          Serial.println("Geçersiz format: Miktar (quantity) belirtilmemiş.");
+                        }
+                      } else {
+                        Serial.println("Geçersiz format: İkinci ':' karakteri bulunamadı.");
+                      }
+                    } else {
+                      Serial.println("Geçersiz format: Sipariş ID (orderId) belirtilmemiş.");
+                    }
+                  } else {
+                    Serial.println("Geçersiz format: ':' karakteri bulunamadı.");
+                  }
+        } else if (command == "OSC") {
+          // OSC komutunu işle
+          dfd = "";
+          int colonOSC = value.indexOf(":");
+          if (colonOSC != -1) {
+            String operationIdStr = value.substring(0, colonOSC);
+            if (operationIdStr.length() > 0) {
+              OperationId = operationIdStr.toInt(); // String'i int'e dönüştür ve OperationId'ye ata
+
+              int secondColons = value.indexOf(":", colonOSC + 1);
+              if (secondColons != -1) {
+                String targetStr = value.substring(secondColons + 1);
+                  if (targetStr.length() > 0) 
+                  {
+                  OperationTarget=targetStr.toInt();
+                  }else{
+                    OperationTarget=0;
+                  }     
+                  Operation = value.substring(colonOSC + 1,secondColons); // Operation olarak ayarla
+                  Serial2.print("page performansekr" + String(endChar));
+                  Serial2.print("t0.txt=\"" + Personel + "\"" + endChar);
+                  Serial2.print("t1.txt=\"" + Operation + "\"" + endChar);
+                  Serial2.print("t2.txt=\"" + ModelNumber + "\"" + endChar);
+                  Serial2.print("t3.txt=\"" + ModelName + "\"" + endChar);
+                  Serial2.print("t4.txt=\"" + String(OperationQuantity) + "\"" + endChar);
+                  Serial2.print("n0.val=" + String(OperationTarget)  + endChar);
+                  Serial2.print("n1.val=" + String(dayTarget)  + endChar);
+                  delay(100);
+                  //sayacDevrede = true;
+              } else {
+                Serial.println("Geçersiz format: İkinci ':' karakteri bulunamadı.");
+              }
+            } else {
+              Serial.println("Geçersiz format: Operation ID belirtilmemiş.");
+            }
+          } else {
+            Serial.println("Geçersiz format: İlk ':' karakteri bulunamadı.");
+          }
+        } else if (command == "OPC") {
+                    dfd = "";
+                    int colonOPC = value.indexOf(":");
+                    if (colonOPC != -1) {
+                      String operationvalueStr = value.substring(0, colonOPC);
+                      if (operationvalueStr.length() > 0) {
+                        operationCount = operationvalueStr.toInt(); // String'i int'e dönüştür ve operationCount'ye ata
+
+                        int secondColons = value.indexOf(":", colonOPC + 1);
+                        if (secondColons != -1) {
+                          String minTimestr = value.substring(secondColons + 1);
+                            if (minTimestr.length() > 0) 
+                            {
+                            minTime=minTimestr.toInt();
+                            }else{
+                              minTime=0;
+                            }     
+                            String maxTimeStr = value.substring(colonOPC + 1,secondColons); // Operation olarak ayarla
+                            maxTime=maxTimeStr.toInt();
+                            delay(100);
+                            sayacDevrede = true;
+                        } else {
+                          Serial.println("Geçersiz format: İkinci ':' karakteri bulunamadı.");
+                        }
+                      } else {
+                        Serial.println("Geçersiz format: Operation ID belirtilmemiş.");
+                      }
+                    } else {
+                      Serial.println("Geçersiz format: İlk ':' karakteri bulunamadı.");
+                    }
+  } else if (command == "CIK") {
+            dfd = ""; 
+            Serial2.print("page girisekr" + endChar); // Eğer page0'da değilsek geçiş yap
+            Serial.println("CIK Kontrolü Tamamlandı");
+        } else if (command == "TMR") {
+                      dfd="";
+                      if(value=="10"){
+                        Tamir=true;//Aktif olduğu sürece yapılan işler adetlere eklenmez.
+                        Serial.println("Tamir Aktif");
+                      }else{
+                        Tamir=false;
+                        Serial.println("Tamir Pasif");
+                      }
+
+                       
+        }
+      } else {
+        Serial.println("Geçersiz format: Başlangıç karakterleri uygun değil.");
+      }
+      dfd = ""; // Komut işlendiğinde dfd'yi sıfırla
+    }
+  }
+}
+
+String replaceTurkishChars(String text) {
+  text.replace("Ç", "C");
+  text.replace("Ğ", "G");
+  text.replace("İ", "I");
+  text.replace("Ö", "O");
+  text.replace("Ş", "S");
+  text.replace("Ü", "U");
+  text.replace("ç", "c");
+  text.replace("ğ", "g");
+  text.replace("ı", "i");
+  text.replace("ö", "o");
+  text.replace("ş", "s");
+  text.replace("ü", "u");
+  return text;
+}
+
+byte bcdToDec(byte val) {
+  return ((val / 16 * 10) + (val % 16));
+}
+
+byte decToBcd(byte val) {
+  return ((val / 10 * 16) + (val % 10));
+}
+
+void printBinary(int value) {
+  for (int mask = 0x80; mask; mask >>= 1) {
+    if (mask & value)
+      Serial.print('1');
+    else
+      Serial.print('0');
+  }
+}
+
+void delayFunction() {
+
+Serial.println("---------------------------------------");
+Serial.println("PersonelId:" + String(PersonelId));
+Serial.println("Personel Name:" + Personel);
+Serial.println("Order Id:"+ String(OrderId));
+Serial.println("Operation Id:"+ String(OperationId));
+Serial.println("Operation Name:"+ Operation);
+Serial.println("Operation Adet:"+ String(OperationQuantity));
+Serial.println("Operation Target:"+ String(OperationTarget));
+Serial.println("ModelName:"+ ModelName);
+Serial.println("ModelNumber:"+ ModelNumber);
+Serial.println("Day Target:"+ String(dayTarget));
+Serial.println("operationCount:"+ String(operationCount));
+Serial.println("maxTime:"+ String(maxTime));
+Serial.println("minTime:"+ String(minTime));
+ 
+// Serial.println("---------------------------------------");
+
+//   Serial.print("Boş Yığın Bellek: ");
+//   Serial.println(ESP.getFreeHeap());
+//   Serial.print("Tahsis Edilebilir Maksimum Yığın Bellek: ");
+//   Serial.println(ESP.getMaxAllocHeap());
+//   Serial.print("Toplam Yığın Bellek: ");
+//   Serial.println(ESP.getHeapSize());
+//   Serial.print("Minimum Boş Yığın Bellek: ");
+//   Serial.println(ESP.getMinFreeHeap());
+//   Serial.print("Free PSRAM Memory: ");
+//   Serial.println(ESP.getFreePsram());
+//   Serial.print("Total PSRAM Memory: ");
+//   Serial.println(ESP.getPsramSize());
+//   Serial.println("---------------------------------------");
+  if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("WiFi bağlantısı başarılı!");
+            Serial2.print("wifi.pic=11" + String(endChar));
+          } else {
+            Serial.println("WiFi bağlantısı başarısız!");
+            Serial2.print("wifi.pic=10" + String(endChar));
+          }
+}

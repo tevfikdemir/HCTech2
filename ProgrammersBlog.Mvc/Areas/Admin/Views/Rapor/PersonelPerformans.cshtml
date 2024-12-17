@@ -1,0 +1,118 @@
+﻿@model ProgrammersBlog.Entities.Dtos.PersonPerformansListDTO
+
+
+<table class="table table-bordered" id="personelPerformansTable" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Tarih</th>
+            <th>Operasyon</th>
+            <th>Personel</th>
+            <th>Hedef</th>
+            <th>Model</th>
+            <th>Ortalama</th>
+            <th>Performans</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < Model.PersonWorks.Count; i++)
+        {
+            <tr>
+                <td>@(i + 1)</td>
+                <td>@Model.PersonWorks[i].CreateDate.ToString("dd MMM yyyy")</td>
+                <td>@Model.PersonWorks[i].OperationName</td>
+                <td>@Model.PersonWorks[i].PersonName</td>
+                <td>@Model.PersonWorks[i].Target</td>
+                <td>@Model.PersonWorks[i].OrderType</td>
+                <td>@Model.PersonWorks[i].Quantity</td>
+                <td>@Model.PersonWorks[i].Performance.ToString("F2")%</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const dataTable = $('#personelPerformansTable').DataTable({
+                dom:
+                    "<'row'<'col-sm-3'l><'col-sm-6 text-center'B><'col-sm-3'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                buttons: [
+                    {
+                        text: 'Yenile',
+                        className: 'btn btn-warning',
+                        action: function (e, dt, node, config) {
+                            $.ajax({
+                                type: 'GET',
+                                url: '/Admin/Rapor/GetAllPersonPerformansDtos/',
+                                contentType: "application/json",
+                                beforeSend: function () {
+                                    $('#personelPerformansTable').hide();
+                                    $('.spinner-border').show();
+                                },
+                                success: function (data) {
+                                    const xdata = jQuery.parseJSON(data);
+                                    dataTable.clear();
+                                    if (xdata.Data !== null && xdata.Data.length > 0) {
+                                        $.each(xdata.Data, function (index, personWork) {
+                                            const newTableRow = dataTable.row.add([
+                                                index + 1,
+                                                new Date(personWork.CreateDate).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' }),
+                                                personWork.OperationName,
+                                                personWork.PersonName,
+                                                personWork.Target,
+                                                personWork.OrderType,
+                                                personWork.Quantity,
+                                                `${personWork.Performance.toFixed(2)}%`
+                                            ]).node();
+                                            $(newTableRow).attr('name', personWork.Id);
+                                        });
+
+                                        // Performansı en iyi olan personeli renklendirme
+                                        let bestPerformerRow = dataTable.row(':first').node();
+                                        $(bestPerformerRow).addClass('best-performer');
+
+                                        dataTable.draw();
+                                        $('.spinner-border').hide();
+                                        $('#personelPerformansTable').fadeIn(1400);
+                                    } else {
+                                        toastr.error('Veri alınamadı veya veri yok.', 'Hata!');
+                                    }
+                                },
+                                error: function (err) {
+                                    console.log(err);
+                                    $('.spinner-border').hide();
+                                    $('#personelPerformansTable').fadeIn(1000);
+                                    toastr.error('Veri alınamadı.', 'Hata!');
+                                }
+                            });
+                        }
+                    }
+                ],
+                language: {
+                    // Dil seçenekleri buraya gelecek
+                },
+                rowCallback: function (row, data, index) {
+                    // Performansı en iyi olan personeli renklendirme
+                    if (index === 0) {
+                        $(row).addClass('best-performer');
+                    }
+                }
+            });
+
+            // Sayfa yüklendiğinde bir kez yenileme işlemi yapmak için
+            dataTable.buttons(1).trigger();
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .best-performer {
+            background-color: #dff0d8 !important; /* Örnek bir arkaplan rengi */
+            font-weight: bold;
+    </style>
+        }
+}

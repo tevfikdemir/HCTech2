@@ -1,0 +1,110 @@
+﻿<div  class="row">
+    <canvas id="myChart" width="400" height="400"></canvas>
+</div>
+
+@section Scripts
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script>
+        $(document).ready(function () {
+            console.log("Document is ready.");
+            drawCharts();
+        });
+
+        function drawCharts() {
+            console.log("drawCharts function called.");
+            $.ajax({
+                type: "GET",
+                dataType: "json",
+                contentType: "application/json",
+                url: '/Admin/OrdPersSizeOpr/GetAllOrdPersSizeOpr',
+                success: function (result) {
+                    console.log("AJAX Success: ", result);
+
+                    var jsonData = JSON.parse(result);
+                    var labels = [];
+                    var data = [];
+                    var backgroundColors = [];
+                    var borderColors = [];
+
+                    $.each(jsonData.$values, function (i, obj) {
+                        if (obj.PersonelName && obj.TotalQuantity !== undefined) {
+                            labels.push(obj.PersonelName);
+                            data.push(obj.TotalQuantity);
+
+                            // Generate random colors
+                            var bgColor = getRandomRgba();
+                            var borderColor = bgColor.replace('0.2', '1');  // Convert to solid color
+
+                            backgroundColors.push(bgColor);
+                            borderColors.push(borderColor);
+                        } else {
+                            console.error("Invalid item format: ", obj);
+                        }
+                    });
+
+                    console.log("Labels: ", labels);
+                    console.log("Data: ", data);
+                    console.log("Background Colors: ", backgroundColors);
+                    console.log("Border Colors: ", borderColors);
+                    updateChart(labels, data, backgroundColors, borderColors);
+                },
+                error: function (error) {
+                    console.error('AJAX Error:', error);
+                }
+            });
+        }
+
+        function getRandomRgba() {
+            var r = Math.floor(Math.random() * 255);
+            var g = Math.floor(Math.random() * 255);
+            var b = Math.floor(Math.random() * 255);
+            return `rgba(${r}, ${g}, ${b}, 0.2)`;
+        }
+
+        function updateChart(labels, data, backgroundColors, borderColors) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+
+            if (window.myChart instanceof Chart) {
+                window.myChart.destroy();
+            }
+
+            window.myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Quantity',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        barPercentage: 0.5,
+                        barThickness: 4,
+                        maxBarThickness: 6,
+                        minBarLength: 2,
+                    }]
+                },
+                options: {
+                    plugins: {
+                        datalabels: {
+                            anchor: 'end', // Etiketlerin konumunu belirtin (start, center, end)
+                            align: 'end', // Etiketlerin hizalamasını belirtin (start, center, end)
+                            formatter: function (value, context) {
+                                return value; // Etiket formatını belirleyin
+                            }
+                        }
+                    },
+                    maintainAspectRatio: false, // En-boy oranını koruma
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            console.log("Chart updated successfully.");
+        }
+    </script>
+}

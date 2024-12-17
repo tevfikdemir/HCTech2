@@ -1,0 +1,63 @@
+#include "Nextion.h"
+
+// Donanımsal seri portu belirleyin
+HardwareSerial nextion(2);
+
+NexPage p0 = NexPage(0, 0, "page0");//Ekrandaki sayfaları tanıtıyoruz
+NexButton p0_b0 = NexButton(0, 1, "b0");//Butuonları tanıtıyoruz(Sayfa,Id,objname)
+NexNumber p0_n0 = NexNumber(0, 5, "n0");//Sayısal alanları tanıtıyoruz
+NexText p0_t1 = NexText(0, 6, "t1");//Text alanlarını tanıtıyoruz.
+NexButton p0_b1 = NexButton(0, 2, "b1");
+NexPage p1 = NexPage(1, 0, "page1");
+NexButton p1_b0 = NexButton(1, 1, "b0");
+
+// Nextion ekranda hangi kısımları dinleyeceksek o kısımları listeye ekliyoruz.
+NexTouch *nex_listen_list[] = {
+  &p0_b0, &p0_b1,&p1_b0, NULL
+};
+
+uint32_t next, myInt = 0;
+
+void p0_b1_Release(void *ptr) {
+  Serial.println("b1 tuşuna basıldı");
+}
+
+void p0_b0_Release(void *ptr) {
+  Serial.println("b0 tuşuna basıldı");
+  p1.show();//Nextion Ekranının p1.sayfasına geçmesini sağlar.
+}
+
+void p1_b0_Release(void *ptr) {
+  Serial.println("Geri tuşuna basıldı");
+  p0.show();//Nextion Ekranının p1.sayfasına geçmesini sağlar.
+}
+
+void do_every_so_often() {
+  myInt = (myInt + 1) % 101;
+  p0_n0.setValue(myInt);// Ekrandaki sayısal alana değer yazdırıyoruz.
+}
+
+void setup() {
+  // Seri portları başlatın
+  Serial.begin(115200);
+  nextion.begin(115200, SERIAL_8N1, 16, 17); // TX2 = GPIO17, RX2 = GPIO16
+
+  nexInit();
+
+  p0_b0.attachPop(p0_b0_Release, &p0_b0);
+  p0_b1.attachPop(p0_b1_Release, &p0_b1);
+  p1_b0.attachPop(p1_b0_Release, &p1_b0);
+
+  delay(500); // Nextion ekranının hazır olması için kısa bir bekleme süresi
+
+  p0_t1.setText("merhaba");
+  next = millis();
+}
+
+void loop() {
+  nexLoop(nex_listen_list);
+  if (millis() >= next) {
+    next = millis() + 500;
+    do_every_so_often();
+  }
+}

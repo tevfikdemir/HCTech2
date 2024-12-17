@@ -1,0 +1,77 @@
+﻿@using ProgrammersBlog.Shared.Utilities.Results.ComplexTypes
+@model ProgrammersBlog.Entities.Dtos.OrderListDto
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Sipariş Listesi";
+}
+<ol class="breadcrumb mb-3 mt-2">
+    <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+    <li class="breadcrumb-item active"><a asp-area="Admin" asp-controller="Order" asp-action="Index">Sipariş Listesi</a></li>
+</ol>
+@if (Model.ResultStatus == ResultStatus.Success)
+{
+    <div id="modalPlaceHolder" aria-hidden="true"></div>
+    <div class="card mb-4 mt-2">
+                            <div class="card-header">
+                                <i class="fas fa-table mr-1"></i>
+                                Sipariş Listesi
+                            </div>
+        <div class="card-body">
+            <div class="spinner-border" role="status" style="display: none;">
+                <span class="sr-only">Yükleniyor...</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="ordersTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Sipariş No</th>
+                        <th>Resim</th>
+                         
+                        <th>Sipariş Tipi</th>
+                        <th>Sip.Tarihi</th>
+                        <th>Sip.Adı</th>
+                        <th>Sip.Adet</th>
+                        <th>Gunluk Hedef</th>
+                        <th>İşlemler</th>
+                    </tr>
+                    </thead>
+                    <tfoot>
+                  
+                    </tfoot>
+                    <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                            <tr name="@order.Id">
+                                <td>@order.Id</td>
+                                <td>@order.OrderNumber</td>
+                                <td>@order.Thumbnail</td>
+
+                                <td>@order.OrderType</td>
+                                <td>@order.OrderDate.ToShortDateString()</td>
+                                <td>@order.OrderName</td>
+                                <td>@order.OrderQuantity</td>
+                                <td>@order.DayTarget</td>
+                            <td>
+                                    <button class="btn btn-primary btn-sm btn-update" data-id="@order.Id"><span class="fas fa-edit"></span></button>
+                                    <button class="btn btn-danger btn-sm btn-delete" data-id="@order.Id"><span class="fas fa-minus-circle"></span></button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+     </div>
+}
+@if (Model.ResultStatus == ResultStatus.Error)
+{
+    <div class="alert alert-danger mt-3">
+        @Model.Message <br/>
+        Dashboard sayfasına geri dönmek için lütfen <a class="alert-link" asp-area="Admin" asp-controller="Home" asp-action="Index">tıklayınız.</a>
+    </div>
+}
+@section Scripts
+{
+    <script src="~/AdminLTE/js/orderIndex.js" type="application/ecmascript"></script>
+}

@@ -1,0 +1,282 @@
+﻿@model ProgrammersBlog.Mvc.Areas.Admin.Models.UserWithRolesViewModel
+<div id="layoutSidenav_nav">
+    <nav class="sb-sidenav accordion sb-sidenav-dark bg-info text-white" id="sidenavAccordion">
+        <div class="sb-sidenav-menu">
+            <div class="nav">
+
+                <a class="nav-link collapsed text-danger" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="false" aria-controls="collapsePages">
+                    <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
+                    KULLANICI PANELİ
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages" aria-labelledby="headingTwo" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
+
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutkullanici" aria-expanded="false" aria-controls="collapseLayoutkullanici">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Kullanıcı Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutkullanici" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="User" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
+                                    Ekle  +/-
+                                </a>
+                                <a class="nav-link" asp-area="Admin" asp-controller="Role" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-user-shield"></i></div>
+                                    Roller +/-
+                                </a>
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutpersonel" aria-expanded="false" aria-controls="collapseLayoutpersonel">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Personel Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutpersonel" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Personel" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
+                                    Personel  +/-
+                                </a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutbolum" aria-expanded="false" aria-controls="collapseLayoutbolum">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Bölüm Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutbolum" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Departman" asp-action="Index">Departman +/-</a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutgorev" aria-expanded="false" aria-controls="collapseLayoutgorev">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Görev Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutgorev" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Gorevler" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
+                                    Görev  +/-
+                                </a>
+
+                            </nav>
+                        </div>
+                    </nav>
+                </div>
+
+                <a class="nav-link collapsed text-danger" href="#" data-toggle="collapse" data-target="#collapseisletme" aria-expanded="false" aria-controls="collapseisletme">
+                    <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
+                    İŞLETME PANELİ
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapseisletme" aria-labelledby="headingTwo" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPagess">
+
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutmusteri" aria-expanded="false" aria-controls="collapseLayoutmusteri">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Müşteri Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutmusteri" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagess">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Firmalar" asp-action="Index">Firma +/-</a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutmarka" aria-expanded="false" aria-controls="collapseLayoutmarka">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Marka Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutmarka" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagess">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Operation" asp-action="Index">Operasyon +/-</a>
+
+                            </nav>
+                        </div>
+                    </nav>
+                </div>
+
+                <a class="nav-link collapsed text-danger" href="#" data-toggle="collapse" data-target="#collapsesiparis" aria-expanded="false" aria-controls="collapsesiparis">
+                    <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    SİPARİŞ PANELİ
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsesiparis" aria-labelledby="headingTwo" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPagesss">
+                        <a class="nav-link" asp-area="Admin" asp-controller="Order" asp-action="Index">Sipariş Listesi</a>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsiparis" aria-expanded="false" aria-controls="collapseLayoutsiparis">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Sipariş Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsiparis" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Order" asp-action="Add">Sipariş +/-</a>
+
+                            </nav>
+                        </div>
+
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsiparisdosya" aria-expanded="false" aria-controls="collapseLayoutsiparisdosya">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Sipariş Dosyası
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsiparisdosya" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Order" asp-action="Add">Oluştur +/-</a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsipariskesim" aria-expanded="false" aria-controls="collapseLayoutsipariskesim">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Kesim Dosyası
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsipariskesim" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Order" asp-action="Add">Oluştur +/-</a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsipariskalite" aria-expanded="false" aria-controls="collapseLayoutsipariskalite">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            2.Kalite Dosyası
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsipariskalite" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Order" asp-action="Add">Oluştur +/-</a>
+
+                            </nav>
+                        </div>
+
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsiparismarka" aria-expanded="false" aria-controls="collapseLayoutsiparismarka">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Marka Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsiparismarka" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Size" asp-action="Index">Beden +/-</a>
+
+                            </nav>
+                        </div>
+
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsiparisoperasyon" aria-expanded="false" aria-controls="collapseLayoutsiparisoperasyon">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Operasyon Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsiparisoperasyon" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Operation" asp-action="Index">Operasyon +/-</a>
+
+                            </nav>
+                        </div>
+                        <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutsiparisbeden" aria-expanded="false" aria-controls="collapseLayoutsiparisbeden">
+                            <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                            Beden Ayarları
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse bg-secondary" id="collapseLayoutsiparisbeden" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesss">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" asp-area="Admin" asp-controller="Size" asp-action="Index">Beden +/-</a>
+
+                            </nav>
+                        </div>
+
+                    </nav>
+                </div>
+
+                <a class="nav-link collapsed text-danger" href="#" data-toggle="collapse" data-target="#collapseRapor" aria-expanded="false" aria-controls="collapseRapor">
+                    <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    RAPOR PANELİ
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapseRapor" aria-labelledby="headingTwo" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPagesr">
+                        <a class="nav-link collapsed  text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutraporlar" aria-expanded="false" aria-controls="collapseLayoutraporlar">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                            Raporlar
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse bg-secondary" id="collapseLayoutraporlar" aria-labelledby="headingOne" data-parent="#sidenavAccordionPagesr">
+                            <nav class="sb-sidenav-menu-nested nav">
+
+                                <a class="nav-link" asp-area="Admin" asp-controller="Rapor" asp-action="Index">Sip.Bazında Liste</a>
+                                <a class="nav-link" asp-area="Admin" asp-controller="Rapor" asp-action="GrafikPersonel2">Personel iş Raporu</a>
+                                <a class="nav-link" asp-area="Admin" asp-controller="Rapor" asp-action="PersonelPerformans">Personel Performans</a>
+
+                                <a class="nav-link" asp-area="Admin" asp-controller="Rapor" asp-action="GetAllPersonWorkRapor">Operasyon Raporu</a>
+                                <a class="nav-link" asp-area="Admin" asp-controller="Rapor" asp-action="GrafikOperation">Operasyon Grafik</a>
+                            </nav>
+                        </div>
+                    </nav>
+                </div>
+
+                <div class="sb-sidenav-menu-heading">Diğer</div>
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
+                    <div class="sb-nav-link-icon"><i class="fas fa-archive"></i></div>
+                    Arşiv
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse bg-secondary" id="collapseLayouts" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav">
+                        <a class="nav-link" asp-area="Admin" asp-controller="Category" asp-action="DeletedCategories">Kategoriler</a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Article" asp-action="DeletedArticles">Makaleler</a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Comment" asp-action="DeletedComments">Yorumlar</a>
+                    </nav>
+                </div>
+                <a class="nav-link collapsed text-white" href="#" data-toggle="collapse" data-target="#collapseLayoutayarlar" aria-expanded="false" aria-controls="collapseLayouts">
+                    <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                    Ayarlar
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse bg-secondary" id="collapseLayoutayarlar" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav">
+                        <a class="nav-link" asp-area="Admin" asp-controller="Options" asp-action="GeneralSettings">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                            Genel
+                        </a><a class="nav-link" asp-area="Admin" asp-controller="Options" asp-action="EmailSettings">
+                            <div class="sb-nav-link-icon"><i class="fas fa-at"></i></div>
+                            E-Posta
+                        </a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Options" asp-action="ArticleRightSideBarWidgetSettings">
+                            <div class="sb-nav-link-icon"><i class="fas fa-newspaper"></i></div>
+                            Widget
+                        </a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Options" asp-action="About">
+                            <div class="sb-nav-link-icon"><i class="fas fa-address-card"></i></div>
+                            Hakkımızda
+                        </a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="WorkTime" asp-action="Index">Çalışma Saati</a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Article" asp-action="Index">Arıza +/-</a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Category" asp-action="Index">Sorun Tipi +/-</a>
+                        <a class="nav-link" asp-area="Admin" asp-controller="Comment" asp-action="Index">Yorumlar</a>
+                    </nav>
+
+                </div>
+            </div>
+        </div>
+        <div class="sb-sidenav-footer bg-info">
+            <div class="small">Kullanıcı:@Model.User.UserName</div>
+            
+        </div>
+    </nav>
+</div>

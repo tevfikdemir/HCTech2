@@ -1,0 +1,254 @@
+﻿@model ProgrammersBlog.Mvc.Areas.Admin.Models.OrderAddViewModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Sipariş Ekle";
+}
+ 
+<form asp-controller="Order" asp-action="Add" method="post">
+
+    <div class="col-12">
+        <div class="row">
+            <div class="col-5">@* Sipariş Ana Bölüm *@
+                <div class="card text-white bg-success mb-3 mt-2 ml-3" style="max-width: 30rem;">
+                    <div class="card-header"><h5>Yeni Sipariş</h5></div>
+                    <div class="card-body">
+                        <h6 class="row card-titlep">
+                            <label class="col-3" asp-for="CompanyId"></label> <span class="text-warning" asp-validation-for="CompanyId"></span>
+                            <select class="col-6 ml-2" asp-for="CompanyId" asp-items="@(new SelectList(Model.Companies,"Id","Name"))">
+                                <option value="">Lütfen Firma Seçiniz...</option>
+                            </select>
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="OrderNumber"></label><span class="text-warning" asp-validation-for="OrderNumber"></span>
+                            <input class="col-6 ml-2" asp-for="OrderNumber" />
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="OrderName"></label><span class="text-warning" asp-validation-for="OrderName"></span>
+                            <input class="col-6 ml-2" asp-for="OrderName" />
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="OrderType"></label><span class="text-warning" asp-validation-for="OrderType"></span>
+                            <input class="col-6 ml-2" asp-for="OrderType" />
+                        </h6>
+
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="OrderQuantity"></label><span class="text-warning" asp-validation-for="OrderQuantity"></span>
+                            <input readonly class="col-3 ml-2" asp-for="OrderQuantity" id="SiparisAdet" />
+                            <button type="button" class="btn btn-danger ml-4">Detay -></button>
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="KesimOran"></label><input class="col-6 ml-2" asp-for="KesimOran" /><span class="text-warning" asp-validation-for="KesimOran"></span>
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="DayTarget"></label><span class="text-warning" asp-validation-for="DayTarget"></span>
+                            <input class="col-6 ml-2" asp-for="DayTarget" />
+                        </h6>
+                        <h6 class="row card-title">
+                            <label class="col-3" asp-for="Description"></label><textarea class="col-6 ml-2" asp-for="Description"></textarea>
+                        </h6>
+                    </div>
+                    <div class="card-footer bg-transparent border-success text-center">
+                        <button type="button" class="btn btn-warning col-5"><span class="fas fa-times"></span> İptal</button>
+                        <button type="submit" class="btn btn-primary col-5 right" id="btnSave"><span class="fas fa-save"></span> Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-7">
+                <div class="row">
+                    <div class="card text-white bg-danger mb-3 mt-2 ml-1" style="max-width: 40rem;">
+                        <div class="card-header"><h5>Sipariş Beden Dağılımı Ve Operasyon Tanımı</h5> </div>
+                        <div class="card-body">
+                            <h6 class="row card-title">
+                                <label class="col-3" asp-for="SizeId"></label>
+                                <select id="sizeList" class="col-3 ml-2" asp-for="SizeId" asp-items="@(new SelectList(Model.Sizes,"Id","SizeName"))">
+                                    <option></option>
+                                </select>
+                                <input class="col-3 ml-2" asp-for="SizeTarget" id="SizeTarget" />
+                                <button type="button" class="btn btn-success ml-2" id="btnSizeEkle"><span class="fas fa-save"></span></button>
+                            </h6>
+                            <div id="orderSizesList"></div>
+                            <div id="hiddenInputsContainer"></div>
+                            <hr size="5" />
+                            <h6 class="row card-title">
+                                <label class="col-3 text-center" asp-for="OperationId"></label>
+                                <label class="col-3 ml-2 text-center" >Adet</label>
+                                <label class="col-3 ml-2 text-center">Bağlı Operasyon</label>
+
+                                <select id="operationList" class="col-3 ml-2 text-center" asp-for="OperationId" asp-items="@(new SelectList(Model.Operations,"Id","OperationName"))">
+                                    <option></option>
+                                </select>
+                                <input class="col-3 ml-2" asp-for="OperationTarget" id="OperationTarget" />
+                                <select id="connectoperationList" class="col-3 ml-2" asp-for="ConnectOperationId" asp-items="@(new SelectList(Model.Operations,"Id","OperationName"))">
+                                    <option></option>
+                                </select>
+                                <button type="button" class="btn btn-success ml-2" id="btnOperationEkle"><span class="fas fa-save"></span></button>
+                                <button type="button" class="btn btn-warning ml-2" id="updateButton"><span class="fas fa-update"></span></button>
+
+                            </h6>
+                            <div id="orderOperationList"></div>
+                            <div id="hiddenInputsOperation"></div>
+                        </div>
+                        <div class="card-footer bg-transparent border-success text-center"></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@section Scripts
+{
+    <script>
+        $(document).ready(function () {
+            let detailIndex = 0;
+            let detailsIndex = 0;
+
+            function updateSiparisAdet() {
+                let totalAdet = 0;
+                $('#orderSizesList .quantity').each(function () {
+                    totalAdet += parseInt($(this).val());
+                });
+                $('#SiparisAdet').val(totalAdet);
+            }
+            var addedSizesObj = {};
+            $('#btnSizeEkle').on('click', function () {
+                var selectedSizeId = $('#sizeList').val().trim(); // trim() ile baştaki ve sondaki boşlukları kaldır
+                var quantity = $('#SizeTarget').val().trim(); // trim() ile baştaki ve sondaki boşlukları kaldır
+
+                // Kontrol etmek için eklenmiş boyutları ve sizeId'nin daha önce eklenip eklenmediğini kontrol edin
+                if (selectedSizeId && quantity !== '' && !addedSizesObj[selectedSizeId]) {
+                    // Eğer eklenmemişse devam edin
+                    addedSizesObj[selectedSizeId] = true; // addedSizesObj içine boyutu ekleyin
+
+                    var selectedSizeText = $('#sizeList option:selected').text();
+
+                    var detailHtml = `
+                                <div class="row card-title" data-size-id="${selectedSizeId}">
+                                    <label class="col-3">${selectedSizeText}</label>
+                                    <input class="col-3 ml-2 quantity" readonly value="${quantity}" />
+                                    <button type="button" class="btn btn-warning col-2 ml-2 btnRemoveDetail">Sil</button>
+                                </div>
+                            `;
+
+                    $('#orderSizesList').append(detailHtml);
+
+                    var hiddenInputs = `
+                                <input type="hidden" name="OrderSizes[${detailIndex}].SizeId" value="${selectedSizeId}" />
+                                <input type="hidden" name="OrderSizes[${detailIndex}].SizeTarget" class="quantity" value="${quantity}" />
+                            `;
+                    $('#hiddenInputsContainer').append(hiddenInputs);
+
+                    detailIndex++;
+                    $('#sizeList').val('');
+                    $('#SizeTarget').val('');
+
+                    updateSiparisAdet(); // Toplamı güncelle
+                }
+            });
+
+            var addedOperationsObj = {};
+            $('#btnOperationEkle').on('click', function () {
+                var selectedOperationId = $('#operationList').val().trim(); // trim() ile baştaki ve sondaki boşlukları kaldır
+                var selectedconnectOperationId = $('#connectoperationList').val().trim(); // trim() ile baştaki ve sondaki boşlukları kaldır
+
+                var target = $('#OperationTarget').val().trim(); // trim() ile baştaki ve sondaki boşlukları kaldır
+
+                // Kontrol etmek için eklenmiş operasyonları ve OperationId'nin daha önce eklenip eklenmediğini kontrol edin
+                if (selectedOperationId && target !== '' && !addedOperationsObj[selectedOperationId]) {
+                    // Eğer eklenmemişse devam edin
+                    addedOperationsObj[selectedOperationId] = true; // addedOperationsObj içine operasyonu ekleyin
+
+                    var selectedOperationText = $('#operationList option:selected').text();
+                    var selectedconnectOperationText = $('#connectoperationList option:selected').text();
+
+                    var detailsHtml = `
+                                <div class="row card-title" data-operation-id="${selectedOperationId}">
+                                    <label class="col-3">${selectedOperationText}</label>
+                                            <Label class="col-2 ml-2 target" >${target}</label>
+                                    <label class="col-3">${selectedconnectOperationText}</label>
+
+                                    <button type="button" class="btn btn-warning col-2 ml-2 btnRemoveDetail">Sil</button>
+                                </div>
+                            `;
+
+                    $('#orderOperationList').append(detailsHtml);
+
+                    var hiddenInputs = `
+                                <input type="hidden" name="OrderOperations[${detailsIndex}].OperationId" value="${selectedOperationId}" />
+                                <input type="hidden" name="OrderOperations[${detailsIndex}].OperationTarget" class="target" value="${target}" />
+                                <input type="hidden" name="OrderOperations[${detailsIndex}].ConnectOperationId" value="${selectedconnectOperationId}" />
+                            `;
+                    $('#hiddenInputsOperation').append(hiddenInputs);
+
+                    detailsIndex++;
+                    $('#operationList').val('');
+                    $('#OperationTarget').val('');
+                    $('#connectoperationList').val('');
+                    // Toplamı güncelle (varsa)
+                }
+            });
+
+            $(document).on('click', '.btnRemoveDetail', function () {
+                var row = $(this).closest('.row');
+                var sizeId = row.data('size-id');
+                var operationId = row.data('operation-id');
+
+                if (sizeId) {
+                    delete addedSizesObj[sizeId];
+                    $(`#hiddenInputsContainer input[name^='OrderSizes']`).filter(function () {
+                        return $(this).val() === sizeId.toString();
+                    }).remove();
+                } else if (operationId) {
+                    delete addedOperationsObj[operationId];
+                    $(`#hiddenInputsOperation input[name^='OrderOperations']`).filter(function () {
+                        return $(this).val() === operationId.toString();
+                    }).remove();
+                }
+
+                row.remove();
+                updateSiparisAdet(); // Toplamı güncelle
+            });
+
+            $('#updateButton').click(function () {
+                $.ajax({
+                    url: '/Admin/Order/UpdateOperations/', // URL should match your action method
+                    type: 'GET',
+                    success: function (data) {
+                        console.log(data);
+                        // Assuming 'data' contains the updated list of operations
+                        var select = $('#operationList');
+                        select.empty();
+                        select.append('<option></option>');
+                        $.each(data.$values, function (index, item) {
+                            select.append('<option value="' + item.id + '">' + item.operationName + '</option>');
+                        });
+                        // Assuming 'data' contains the updated list of operations
+                        var select = $('#connectoperationList');
+                        select.empty();
+                        select.append('<option></option>');
+                        $.each(data.$values, function (index, item) {
+                            select.append('<option value="' + item.id + '">' + item.operationName + '</option>');
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.log(error);
+                    }
+                });
+            });
+
+        });
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ 
+
+}
+
+
+
+

@@ -1,0 +1,60 @@
+﻿@model ProgrammersBlog.Entities.Dtos.PersonListDto
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Silinmiş Personeller";
+}
+<ol class="breadcrumb mb-3 mt-2">
+    <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+    <li class="breadcrumb-item active"><a asp-area="Admin" asp-controller="Category" asp-action="DeletedCategories">Silinmiş Personeller</a></li>
+</ol>
+<div id="modalPlaceHolder" aria-hidden="true"></div>
+    <div class="card mb-4 mt-2">
+                            <div class="card-header">
+                                <i class="fas fa-table mr-1"></i>
+                                Silinmiş Personeller
+                            </div>
+        <div class="card-body">
+            <div class="spinner-border" role="status" style="display: none;">
+                <span class="sr-only">Yükleniyor...</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="deletedCategoriesTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Adı</th>
+                        <th>Açıklaması</th>
+                        <th>Aktif Mi?</th>
+                        <th>Silinmiş Mi?</th>
+                         
+                        <th>İşlemler</th>
+                    </tr>
+                    </thead>
+                    <tfoot>
+                    
+                    </tfoot>
+                    <tbody>
+                    @foreach (var personel in Model.Persons)
+                    {
+                        <tr name="@personel.Id">
+                            <td>@personel.Id</td>
+                            <td>@personel.FirstName</td>
+                            <td>@personel.Department</td>
+                            <td>@(personel.IsActive ? "Evet" : "Hayır")</td>
+                            <td>@(personel.IsDeleted ? "Evet" : "Hayır")</td>
+                            
+                            <td>
+                                <button class="btn btn-warning btn-sm btn-undo" data-id="@personel.Id"><span class="fas fa-undo"></span></button>
+                                <button class="btn btn-danger btn-sm btn-delete" data-id="@personel.Id"><span class="fas fa-minus-circle"></span></button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+     </div>
+@section Scripts
+{
+    <script src="~/AdminLTE/js/deletedPersonels.js" type="application/ecmascript"></script>
+}
